@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Management Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Memory Management Simulator</h1>
+            <p class="text-lg text-gray-600 mt-2">Visualize and compare different memory allocation strategies.</p>
+        </header>
+
+        <!-- Tabs -->
+        <div class="mb-6 border-b border-gray-200">
+            <nav class="flex -mb-px space-x-4" id="tabs">
+                <button class="tab-btn active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="contiguous">Contiguous Allocation</button>
+                <button class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="paging">Paging</button>
+                <button class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="segmentation">Segmentation</button>
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <main id="tab-content">
+            <!-- Contiguous Allocation -->
+            <div id="contiguous-content" class="tab-pane active">
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Controls -->
+                    <div class="md:col-span-1 bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-4">Controls</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="contiguous-memory-size" class="block text-sm font-medium text-gray-700">Total Memory (KB)</label>
+                                <input type="number" id="contiguous-memory-size" value="1024" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="process-size" class="block text-sm font-medium text-gray-700">Process Size (KB)</label>
+                                <input type="number" id="process-size" placeholder="e.g., 128" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="allocation-strategy" class="block text-sm font-medium text-gray-700">Strategy</label>
+                                <select id="allocation-strategy" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    <option value="firstFit">First Fit</option>
+                                    <option value="bestFit">Best Fit</option>
+                                    <option value="worstFit">Worst Fit</option>
+                                </select>
+                            </div>
+                             <div class="flex space-x-2">
+                                <button id="add-process-btn" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Add Process</button>
+                                <button id="reset-contiguous-btn" class="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Reset</button>
+                            </div>
+                        </div>
+                        <div id="contiguous-stats" class="mt-6 text-sm"></div>
+                    </div>
+
+                    <!-- Visualization and Process List -->
+                    <div class="md:col-span-2 space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-4">Memory Visualization</h3>
+                            <div id="contiguous-memory-bar" class="memory-bar bg-gray-200"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                             <h3 class="text-xl font-semibold mb-4">Process List</h3>
+                             <div class="table-container">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size (KB)</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="contiguous-process-list" class="bg-white divide-y divide-gray-200"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paging -->
+            <div id="paging-content" class="tab-pane hidden">
+                 <div class="grid md:grid-cols-3 gap-8">
+                    <div class="md:col-span-1 bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-4">Controls</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="paging-memory-size" class="block text-sm font-medium text-gray-700">Total Memory (KB)</label>
+                                <input type="number" id="paging-memory-size" value="1024" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                             <div>
+                                <label for="page-size" class="block text-sm font-medium text-gray-700">Page/Frame Size (KB)</label>
+                                <input type="number" id="page-size" value="16" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="paging-process-size" class="block text-sm font-medium text-gray-700">Process Size (KB)</label>
+                                <input type="number" id="paging-process-size" placeholder="e.g., 128" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                             <div class="flex space-x-2">
+                                <button id="add-paging-process-btn" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">Add Process</button>
+                                <button id="reset-paging-btn" class="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700">Reset</button>
+                            </div>
+                        </div>
+                        <div id="paging-stats" class="mt-6 text-sm"></div>
+                    </div>
+                    <div class="md:col-span-2 space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-4">Physical Memory (Frames)</h3>
+                            <div id="paging-memory-bar" class="memory-bar flex-wrap bg-gray-200 h-auto"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                             <h3 class="text-xl font-semibold mb-4">Process Page Tables</h3>
+                             <div id="page-tables-container" class="space-y-4 table-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Segmentation -->
+            <div id="segmentation-content" class="tab-pane hidden">
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="md:col-span-1 bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-4">Controls</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="segmentation-memory-size" class="block text-sm font-medium text-gray-700">Total Memory (KB)</label>
+                                <input type="number" id="segmentation-memory-size" value="1024" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+                            <div>
+                                <p class="block text-sm font-medium text-gray-700">Segments (KB)</p>
+                                <input type="text" id="segmentation-process-size" placeholder="e.g., 50, 100, 30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <p class="text-xs text-gray-500 mt-1">Enter comma-separated sizes.</p>
+                            </div>
+                             <div class="flex space-x-2">
+                                <button id="add-segmentation-process-btn" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">Add Process</button>
+                                <button id="reset-segmentation-btn" class="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700">Reset</button>
+                            </div>
+                        </div>
+                        <div id="segmentation-stats" class="mt-6 text-sm"></div>
+                    </div>
+                    <div class="md:col-span-2 space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-4">Memory Visualization</h3>
+                            <div id="segmentation-memory-bar" class="memory-bar bg-gray-200"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                             <h3 class="text-xl font-semibold mb-4">Process Segment Tables</h3>
+                             <div id="segment-tables-container" class="space-y-4 table-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- General UI Logic ---
+            const tabs = document.querySelectorAll('.tab-btn');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    tabPanes.forEach(pane => pane.classList.add('hidden'));
+                    document.getElementById(`${tab.dataset.tab}-content`).classList.remove('hidden');
+                });
+            });
+
+            const processColors = Array.from({ length: 7 }, (_, i) => `process-color-${i}`);
+            const getProcessColor = (id) => processColors[id % processColors.length];
+
+            // --- API Communication Helper ---
+            async function postData(url = '', data = {}) {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert(`Error: ${error.message}`);
+                    return null;
+                }
+                return response.json();
+            }
+
+            // --- Contiguous Allocation UI ---
+            const contiguousUI = {
+                update(data) {
+                    if (!data || !data.state) return;
+                    const { memory, memory_size, processes } = data.state;
+                    this.updateVisualization(memory, memory_size);
+                    this.updateProcessList(processes);
+                    this.updateStats(data.state);
+                },
+                updateVisualization(memory, memorySize) {
+                    const bar = document.getElementById('contiguous-memory-bar');
+                    bar.innerHTML = '';
+                    memory.forEach(block => {
+                        const el = document.createElement('div');
+                        el.style.width = `${(block.size / memorySize) * 100}%`;
+                        el.classList.add('memory-block');
+                        if (block.status === 'allocated') {
+                            el.classList.add(getProcessColor(block.processId));
+                            el.textContent = `P${block.processId} (${block.size}K)`;
+                        } else {
+                            el.classList.add('free-memory');
+                            el.textContent = `${block.size}K`;
+                        }
+                        bar.appendChild(el);
+                    });
+                },
+                updateProcessList(processes) {
+                    const list = document.getElementById('contiguous-process-list');
+                    list.innerHTML = '';
+                    Object.values(processes).forEach(p => {
+                        list.innerHTML += `
+                            <tr>
+                                <td class="px-6 py-4">P${p.id}</td>
+                                <td class="px-6 py-4">${p.size} KB</td>
+                                <td class="px-6 py-4"><button class="text-red-600 hover:text-red-900 deallocate-btn" data-type="contiguous" data-id="${p.id}">Deallocate</button></td>
+                            </tr>`;
+                    });
+                },
+                updateStats(state) {
+                    const statsEl = document.getElementById('contiguous-stats');
+                    const totalAllocated = Object.values(state.processes).reduce((sum, p) => sum + p.size, 0);
+                    const totalFree = state.memory_size - totalAllocated;
+                    const freeBlocks = state.memory.filter(b => b.status === 'free');
+                    statsEl.innerHTML = `
+                        <p><strong>Total Memory:</strong> ${state.memory_size} KB</p>
+                        <p><strong>Allocated:</strong> ${totalAllocated} KB</p>
+                        <p><strong>Free:</strong> ${totalFree} KB</p>
+                        <p><strong>Free Blocks:</strong> ${freeBlocks.length}</p>`;
+                }
+            };
+
+            // --- Paging UI ---
+            const pagingUI = {
+                update(data) {
+                    if (!data || !data.state) return;
+                    const { frames, processes, page_size, memory_size } = data.state;
+                    this.updateVisualization(frames);
+                    this.updatePageTables(processes);
+                    this.updateStats(data.state);
+                },
+                updateVisualization(frames) {
+                    const bar = document.getElementById('paging-memory-bar');
+                    bar.innerHTML = '';
+                    frames.forEach((frame, index) => {
+                        const el = document.createElement('div');
+                        el.style.width = `${100 / frames.length}%`;
+                        el.classList.add('memory-block', 'h-10', 'border-gray-400');
+                        if (frame.status === 'allocated') {
+                            el.classList.add(getProcessColor(frame.processId));
+                            el.textContent = `P${frame.processId}[${frame.pageNum}]`;
+                        } else {
+                            el.classList.add('free-memory');
+                        }
+                        bar.appendChild(el);
+                    });
+                },
+                updatePageTables(processes) {
+                    const container = document.getElementById('page-tables-container');
+                    container.innerHTML = Object.values(processes).map(p => `
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-semibold text-lg">Process ${p.id} (Size: ${p.size}KB)</h4>
+                                <button class="text-red-600 hover:text-red-900 deallocate-btn" data-type="paging" data-id="${p.id}">Deallocate</button>
+                            </div>
+                            <table class="min-w-full divide-y divide-gray-200 border">
+                                <thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left">Page #</th><th class="px-4 py-2 text-left">Frame #</th></tr></thead>
+                                <tbody>${p.pageTable.map(e => `<tr><td class="px-4 py-2">${e.page}</td><td class="px-4 py-2">${e.frame}</td></tr>`).join('')}</tbody>
+                            </table>
+                        </div>`).join('') || `<p class="text-gray-500">No processes allocated.</p>`;
+                },
+                updateStats(state) {
+                    const statsEl = document.getElementById('paging-stats');
+                    const allocatedFrames = state.frames.filter(f => f.status === 'allocated').length;
+                    let internalFrag = 0;
+                    Object.values(state.processes).forEach(p => {
+                        internalFrag += (Math.ceil(p.size / state.page_size) * state.page_size) - p.size;
+                    });
+                    statsEl.innerHTML = `
+                        <p><strong>Total Memory:</strong> ${state.memory_size} KB</p>
+                        <p><strong>Page Size:</strong> ${state.page_size} KB</p>
+                        <p><strong>Total Frames:</strong> ${state.frames.length}</p>
+                        <p><strong>Allocated Frames:</strong> ${allocatedFrames}</p>
+                        <p><strong>Internal Fragmentation:</strong> ${internalFrag} KB</p>`;
+                }
+            };
+            
+            // --- Segmentation UI ---
+            const segmentationUI = {
+                update(data) {
+                    if (!data || !data.state) return;
+                    const { memory, memory_size, processes } = data.state;
+                    this.updateVisualization(memory, memory_size);
+                    this.updateSegmentTables(processes);
+                    this.updateStats(data.state);
+                },
+                updateVisualization(memory, memorySize) {
+                    const bar = document.getElementById('segmentation-memory-bar');
+                    bar.innerHTML = '';
+                    memory.forEach(block => {
+                        const el = document.createElement('div');
+                        el.style.width = `${(block.size / memorySize) * 100}%`;
+                        el.classList.add('memory-block');
+                        if (block.status === 'allocated') {
+                            el.classList.add(getProcessColor(block.processId));
+                            el.textContent = `P${block.processId}[${block.segmentId}] (${block.size}K)`;
+                        } else {
+                            el.classList.add('free-memory');
+                            el.textContent = `${block.size}K`;
+                        }
+                        bar.appendChild(el);
+                    });
+                },
+                updateSegmentTables(processes) {
+                    const container = document.getElementById('segment-tables-container');
+                    container.innerHTML = Object.values(processes).map(p => `
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-semibold text-lg">Process ${p.id}</h4>
+                                <button class="text-red-600 hover:text-red-900 deallocate-btn" data-type="segmentation" data-id="${p.id}">Deallocate</button>
+                            </div>
+                            <table class="min-w-full divide-y divide-gray-200 border">
+                                <thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left">Segment #</th><th class="px-4 py-2 text-left">Base</th><th class="px-4 py-2 text-left">Limit</th></tr></thead>
+                                <tbody>${p.segments.map(s => `<tr><td class="px-4 py-2">${s.id}</td><td class="px-4 py-2">${s.base}</td><td class="px-4 py-2">${s.limit}</td></tr>`).join('')}</tbody>
+                            </table>
+                        </div>`).join('') || `<p class="text-gray-500">No processes allocated.</p>`;
+                },
+                updateStats(state) {
+                    const statsEl = document.getElementById('segmentation-stats');
+                    const totalAllocated = Object.values(state.processes).reduce((sum, p) => sum + p.segments.reduce((s, seg) => s + seg.size, 0), 0);
+                    statsEl.innerHTML = `
+                        <p><strong>Total Memory:</strong> ${state.memory_size} KB</p>
+                        <p><strong>Allocated:</strong> ${totalAllocated} KB</p>
+                        <p><strong>Free:</strong> ${state.memory_size - totalAllocated} KB</p>`;
+                }
+            };
+
+            // --- Event Listeners ---
+            document.getElementById('add-process-btn').addEventListener('click', async () => {
+                const processSize = document.getElementById('process-size').value;
+                const strategy = document.getElementById('allocation-strategy').value;
+                const data = await postData('/api/contiguous/allocate', { processSize, strategy });
+                if (data) contiguousUI.update(data);
+            });
+
+            document.getElementById('reset-contiguous-btn').addEventListener('click', async () => {
+                const memorySize = document.getElementById('contiguous-memory-size').value;
+                const data = await postData('/api/contiguous/reset', { memorySize });
+                if (data) contiguousUI.update(data);
+            });
+            
+            document.getElementById('add-paging-process-btn').addEventListener('click', async () => {
+                const processSize = document.getElementById('paging-process-size').value;
+                const data = await postData('/api/paging/allocate', { processSize });
+                if (data) pagingUI.update(data);
+            });
+            
+            document.getElementById('reset-paging-btn').addEventListener('click', async () => {
+                const memorySize = document.getElementById('paging-memory-size').value;
+                const pageSize = document.getElementById('page-size').value;
+                const data = await postData('/api/paging/reset', { memorySize, pageSize });
+                if (data) pagingUI.update(data);
+            });
+            
+            document.getElementById('add-segmentation-process-btn').addEventListener('click', async () => {
+                const sizesStr = document.getElementById('segmentation-process-size').value;
+                const segmentSizes = sizesStr.split(',').map(s => s.trim()).filter(Boolean);
+                const data = await postData('/api/segmentation/allocate', { segmentSizes });
+                if (data) segmentationUI.update(data);
+            });
+
+            document.getElementById('reset-segmentation-btn').addEventListener('click', async () => {
+                const memorySize = document.getElementById('segmentation-memory-size').value;
+                const data = await postData('/api/segmentation/reset', { memorySize });
+                if (data) segmentationUI.update(data);
+            });
+
+            document.body.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('deallocate-btn')) {
+                    const { type, id } = e.target.dataset;
+                    const data = await postData(`/api/${type}/deallocate`, { processId: id });
+                    if (data) {
+                        if (type === 'contiguous') contiguousUI.update(data);
+                        if (type === 'paging') pagingUI.update(data);
+                        if (type === 'segmentation') segmentationUI.update(data);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
